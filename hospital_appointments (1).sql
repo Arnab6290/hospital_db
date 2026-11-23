@@ -1,0 +1,562 @@
+-- Hospital Appointment Management (MySQL 8)
+-- bigger sample data version
+
+DROP DATABASE IF EXISTS hospital_db;
+CREATE DATABASE hospital_db;
+USE hospital_db;
+
+-- ---------- tables ----------
+
+CREATE TABLE departments (
+    dept_id INT AUTO_INCREMENT PRIMARY KEY,
+    name    VARCHAR(50) NOT NULL UNIQUE
+);
+
+CREATE TABLE doctors (
+    doctor_id INT AUTO_INCREMENT PRIMARY KEY,
+    name      VARCHAR(60) NOT NULL,
+    dept_id   INT NOT NULL,
+    fee       DECIMAL(8,2) NOT NULL CHECK (fee >= 0),
+    FOREIGN KEY (dept_id) REFERENCES departments(dept_id)
+);
+
+CREATE TABLE patients (
+    patient_id INT AUTO_INCREMENT PRIMARY KEY,
+    name       VARCHAR(60) NOT NULL,
+    age        INT NOT NULL,
+    phone      VARCHAR(15)
+);
+
+CREATE TABLE appointments (
+    appt_id    INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT NOT NULL,
+    doctor_id  INT NOT NULL,
+    appt_date  DATE NOT NULL,
+    slot       TIME NOT NULL,
+    status     ENUM('PENDING','CONFIRMED','CANCELLED') NOT NULL DEFAULT 'PENDING',
+    FOREIGN KEY (patient_id) REFERENCES patients(patient_id),
+    FOREIGN KEY (doctor_id)  REFERENCES doctors(doctor_id)
+);
+
+CREATE TABLE bills (
+    bill_id   INT AUTO_INCREMENT PRIMARY KEY,
+    appt_id   INT NOT NULL UNIQUE,          -- one bill per appointment
+    amount    DECIMAL(8,2) NOT NULL,
+    billed_on DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (appt_id) REFERENCES appointments(appt_id)
+);
+
+-- ---------- sample data ----------
+
+INSERT INTO departments (name) VALUES
+('Cardiology'),
+('ENT'),
+('Paediatrics'),
+('Orthopaedics'),
+('Dermatology'),
+('Neurology'),
+('Gynaecology'),
+('General Medicine');
+
+INSERT INTO doctors (name, dept_id, fee) VALUES
+('Dr. Arup Rao', 1, 800.00),
+('Dr. Sameer Ali', 1, 850.00),
+('Dr. Mina Sen', 2, 500.00),
+('Dr. Tapan Basu', 2, 450.00),
+('Dr. Joy Mitra', 3, 600.00),
+('Dr. Ritu Ghosh', 3, 550.00),
+('Dr. Kavita Nair', 4, 700.00),
+('Dr. Rajesh Iyer', 4, 750.00),
+('Dr. Sneha Pillai', 5, 500.00),
+('Dr. Anil Kapoor', 5, 600.00),
+('Dr. Debashis Roy', 6, 900.00),
+('Dr. Farah Khan', 6, 950.00),
+('Dr. Lata Menon', 7, 650.00),
+('Dr. Shruti Joshi', 7, 700.00),
+('Dr. Gopal Verma', 8, 300.00),
+('Dr. Nisha Agarwal', 8, 350.00);
+
+INSERT INTO patients (name, age, phone) VALUES
+('Amit Mukherjee', 46, '9879803179'),
+('Ravi Reddy', 4, '9840654837'),
+('Sana Sen', 55, '9838507878'),
+('Sunita Paul', 5, '9846130597'),
+('Ravi Sen', 8, '9816254296'),
+('Vikram Singh', 73, '9886795279'),
+('Anita Sen', 4, '9870444382'),
+('Deepak Paul', 83, '9828837080'),
+('Rahul Bose', 22, '9857979086'),
+('Suresh Bose', 13, '9890312225'),
+('Vikram Sharma', 12, '9851750176'),
+('Manoj Kumar', 7, '9870812812'),
+('Neha Singh', 52, '9827387161'),
+('Sourav Das', 14, '9873522357'),
+('Arjun Paul', 46, '9886880921'),
+('Imran Roy', 59, '9888205837'),
+('Priya Mukherjee', 2, '9822166626'),
+('Sunita Singh', 27, '9854311966'),
+('Kavya Nair', 67, '9872092104'),
+('Anita Mukherjee', 83, '9813998323'),
+('Sunita Kumar', 58, '9812991802'),
+('Suresh Reddy', 64, '9892477231'),
+('Kavya Reddy', 12, '9859385594'),
+('Rahul Kumar', 62, '9832764286'),
+('Deepak Das', 41, '9842411394'),
+('Pooja Paul', 7, '9895117276'),
+('Priya Das', 8, '9861595802'),
+('Neha Reddy', 5, '9828277277'),
+('Rahul Chatterjee', 4, '9818608592'),
+('Suresh Dey', 30, '9873263752'),
+('Suresh Mukherjee', 33, '9893984536'),
+('Pooja Mukherjee', 70, '9893856061'),
+('Priya Nair', 9, '9847329132'),
+('Meera Ghosh', 67, '9857541894'),
+('Sana Nair', 51, '9828237660'),
+('Deepak Singh', 8, '9845757280'),
+('Sourav Singh', 5, '9894447151'),
+('Anita Bose', 56, '9881859041'),
+('Rekha Nair', 12, '9836581864'),
+('Amit Paul', 5, '9811445077'),
+('Neha Ghosh', 84, '9814855327'),
+('Kavya Chatterjee', 34, '9882435848'),
+('Kavya Roy', 82, '9831366437'),
+('Ravi Nair', 8, '9865093990'),
+('Amit Dey', 44, '9870872592'),
+('Imran Dey', 60, '9883821504'),
+('Pooja Kumar', 61, '9872237798'),
+('Vikram Reddy', 7, '9896116282'),
+('Arjun Das', 13, '9862374786'),
+('Amit Kumar', 39, '9845149361'),
+('Anita Khan', 72, '9821109548'),
+('Rahul Khan', 71, '9866561638'),
+('Ravi Roy', 14, '9839298994'),
+('Rahul Nair', 14, '9833205749'),
+('Suresh Paul', 41, '9829954894'),
+('Neha Kumar', 83, '9869077708'),
+('Arjun Reddy', 9, '9868978235'),
+('Deepak Khan', 68, '9885367436'),
+('Amit Khan', 83, '9885158047'),
+('Suresh Sharma', 74, '9837949442');
+
+-- last 6 months of appointments (already confirmed or cancelled)
+INSERT INTO appointments (patient_id, doctor_id, appt_date, slot, status) VALUES
+(3, 8, DATE_SUB(CURDATE(), INTERVAL 180 DAY), '09:00:00', 'CONFIRMED'),
+(52, 15, DATE_SUB(CURDATE(), INTERVAL 180 DAY), '16:00:00', 'CONFIRMED'),
+(18, 15, DATE_SUB(CURDATE(), INTERVAL 180 DAY), '12:00:00', 'CONFIRMED'),
+(2, 9, DATE_SUB(CURDATE(), INTERVAL 179 DAY), '11:00:00', 'CONFIRMED'),
+(19, 10, DATE_SUB(CURDATE(), INTERVAL 179 DAY), '12:30:00', 'CANCELLED'),
+(24, 6, DATE_SUB(CURDATE(), INTERVAL 176 DAY), '14:30:00', 'CONFIRMED'),
+(36, 13, DATE_SUB(CURDATE(), INTERVAL 176 DAY), '09:00:00', 'CANCELLED'),
+(24, 2, DATE_SUB(CURDATE(), INTERVAL 173 DAY), '11:30:00', 'CONFIRMED'),
+(13, 8, DATE_SUB(CURDATE(), INTERVAL 173 DAY), '15:00:00', 'CONFIRMED'),
+(1, 9, DATE_SUB(CURDATE(), INTERVAL 172 DAY), '13:30:00', 'CONFIRMED'),
+(43, 13, DATE_SUB(CURDATE(), INTERVAL 172 DAY), '13:30:00', 'CONFIRMED'),
+(22, 14, DATE_SUB(CURDATE(), INTERVAL 171 DAY), '13:00:00', 'CONFIRMED'),
+(11, 9, DATE_SUB(CURDATE(), INTERVAL 170 DAY), '15:00:00', 'CONFIRMED'),
+(27, 8, DATE_SUB(CURDATE(), INTERVAL 169 DAY), '09:30:00', 'CONFIRMED'),
+(15, 13, DATE_SUB(CURDATE(), INTERVAL 169 DAY), '14:00:00', 'CONFIRMED'),
+(31, 13, DATE_SUB(CURDATE(), INTERVAL 169 DAY), '09:30:00', 'CONFIRMED'),
+(53, 16, DATE_SUB(CURDATE(), INTERVAL 169 DAY), '16:00:00', 'CONFIRMED'),
+(56, 3, DATE_SUB(CURDATE(), INTERVAL 168 DAY), '16:00:00', 'CANCELLED'),
+(9, 4, DATE_SUB(CURDATE(), INTERVAL 168 DAY), '11:00:00', 'CONFIRMED'),
+(30, 4, DATE_SUB(CURDATE(), INTERVAL 168 DAY), '09:30:00', 'CONFIRMED'),
+(3, 16, DATE_SUB(CURDATE(), INTERVAL 166 DAY), '15:30:00', 'CANCELLED'),
+(41, 3, DATE_SUB(CURDATE(), INTERVAL 165 DAY), '11:30:00', 'CONFIRMED'),
+(39, 5, DATE_SUB(CURDATE(), INTERVAL 163 DAY), '12:00:00', 'CONFIRMED'),
+(19, 12, DATE_SUB(CURDATE(), INTERVAL 161 DAY), '09:30:00', 'CONFIRMED'),
+(42, 12, DATE_SUB(CURDATE(), INTERVAL 161 DAY), '13:00:00', 'CONFIRMED'),
+(42, 6, DATE_SUB(CURDATE(), INTERVAL 159 DAY), '11:00:00', 'CONFIRMED'),
+(46, 6, DATE_SUB(CURDATE(), INTERVAL 159 DAY), '09:30:00', 'CONFIRMED'),
+(10, 11, DATE_SUB(CURDATE(), INTERVAL 157 DAY), '10:30:00', 'CONFIRMED'),
+(59, 14, DATE_SUB(CURDATE(), INTERVAL 157 DAY), '09:00:00', 'CONFIRMED'),
+(58, 15, DATE_SUB(CURDATE(), INTERVAL 155 DAY), '09:00:00', 'CONFIRMED'),
+(18, 16, DATE_SUB(CURDATE(), INTERVAL 154 DAY), '11:00:00', 'CANCELLED'),
+(44, 9, DATE_SUB(CURDATE(), INTERVAL 152 DAY), '15:30:00', 'CONFIRMED'),
+(37, 15, DATE_SUB(CURDATE(), INTERVAL 151 DAY), '16:30:00', 'CONFIRMED'),
+(3, 13, DATE_SUB(CURDATE(), INTERVAL 149 DAY), '10:00:00', 'CANCELLED'),
+(50, 1, DATE_SUB(CURDATE(), INTERVAL 148 DAY), '11:00:00', 'CONFIRMED'),
+(16, 5, DATE_SUB(CURDATE(), INTERVAL 145 DAY), '12:00:00', 'CANCELLED'),
+(27, 5, DATE_SUB(CURDATE(), INTERVAL 145 DAY), '15:00:00', 'CONFIRMED'),
+(43, 1, DATE_SUB(CURDATE(), INTERVAL 143 DAY), '11:00:00', 'CONFIRMED'),
+(12, 9, DATE_SUB(CURDATE(), INTERVAL 143 DAY), '15:00:00', 'CONFIRMED'),
+(9, 9, DATE_SUB(CURDATE(), INTERVAL 143 DAY), '09:30:00', 'CONFIRMED'),
+(39, 14, DATE_SUB(CURDATE(), INTERVAL 143 DAY), '11:00:00', 'CONFIRMED'),
+(23, 14, DATE_SUB(CURDATE(), INTERVAL 143 DAY), '12:00:00', 'CANCELLED'),
+(21, 1, DATE_SUB(CURDATE(), INTERVAL 141 DAY), '15:30:00', 'CONFIRMED'),
+(20, 1, DATE_SUB(CURDATE(), INTERVAL 141 DAY), '14:30:00', 'CONFIRMED'),
+(37, 10, DATE_SUB(CURDATE(), INTERVAL 140 DAY), '11:00:00', 'CONFIRMED'),
+(1, 10, DATE_SUB(CURDATE(), INTERVAL 140 DAY), '09:30:00', 'CONFIRMED'),
+(29, 13, DATE_SUB(CURDATE(), INTERVAL 140 DAY), '10:00:00', 'CONFIRMED'),
+(20, 2, DATE_SUB(CURDATE(), INTERVAL 138 DAY), '16:00:00', 'CONFIRMED'),
+(2, 11, DATE_SUB(CURDATE(), INTERVAL 138 DAY), '14:30:00', 'CONFIRMED'),
+(21, 3, DATE_SUB(CURDATE(), INTERVAL 137 DAY), '13:30:00', 'CONFIRMED'),
+(19, 2, DATE_SUB(CURDATE(), INTERVAL 135 DAY), '09:00:00', 'CONFIRMED'),
+(59, 11, DATE_SUB(CURDATE(), INTERVAL 135 DAY), '09:30:00', 'CONFIRMED'),
+(57, 10, DATE_SUB(CURDATE(), INTERVAL 133 DAY), '09:30:00', 'CONFIRMED'),
+(10, 10, DATE_SUB(CURDATE(), INTERVAL 133 DAY), '13:30:00', 'CONFIRMED'),
+(35, 1, DATE_SUB(CURDATE(), INTERVAL 131 DAY), '11:30:00', 'CONFIRMED'),
+(53, 5, DATE_SUB(CURDATE(), INTERVAL 131 DAY), '09:30:00', 'CONFIRMED'),
+(14, 2, DATE_SUB(CURDATE(), INTERVAL 130 DAY), '16:00:00', 'CONFIRMED'),
+(36, 12, DATE_SUB(CURDATE(), INTERVAL 130 DAY), '11:00:00', 'CANCELLED'),
+(36, 16, DATE_SUB(CURDATE(), INTERVAL 130 DAY), '12:30:00', 'CONFIRMED'),
+(27, 16, DATE_SUB(CURDATE(), INTERVAL 130 DAY), '11:00:00', 'CONFIRMED'),
+(37, 7, DATE_SUB(CURDATE(), INTERVAL 129 DAY), '09:30:00', 'CONFIRMED'),
+(40, 16, DATE_SUB(CURDATE(), INTERVAL 128 DAY), '13:00:00', 'CONFIRMED'),
+(12, 16, DATE_SUB(CURDATE(), INTERVAL 128 DAY), '11:30:00', 'CANCELLED'),
+(47, 7, DATE_SUB(CURDATE(), INTERVAL 127 DAY), '14:30:00', 'CONFIRMED'),
+(8, 7, DATE_SUB(CURDATE(), INTERVAL 127 DAY), '10:00:00', 'CONFIRMED'),
+(55, 8, DATE_SUB(CURDATE(), INTERVAL 127 DAY), '15:00:00', 'CONFIRMED'),
+(13, 13, DATE_SUB(CURDATE(), INTERVAL 127 DAY), '12:30:00', 'CONFIRMED'),
+(35, 16, DATE_SUB(CURDATE(), INTERVAL 127 DAY), '15:30:00', 'CONFIRMED'),
+(59, 5, DATE_SUB(CURDATE(), INTERVAL 124 DAY), '13:30:00', 'CONFIRMED'),
+(36, 5, DATE_SUB(CURDATE(), INTERVAL 124 DAY), '14:00:00', 'CONFIRMED'),
+(46, 15, DATE_SUB(CURDATE(), INTERVAL 124 DAY), '14:00:00', 'CONFIRMED'),
+(5, 15, DATE_SUB(CURDATE(), INTERVAL 123 DAY), '10:30:00', 'CONFIRMED'),
+(24, 7, DATE_SUB(CURDATE(), INTERVAL 122 DAY), '14:30:00', 'CONFIRMED'),
+(24, 12, DATE_SUB(CURDATE(), INTERVAL 121 DAY), '13:00:00', 'CONFIRMED'),
+(44, 14, DATE_SUB(CURDATE(), INTERVAL 121 DAY), '12:00:00', 'CONFIRMED'),
+(34, 14, DATE_SUB(CURDATE(), INTERVAL 121 DAY), '11:00:00', 'CONFIRMED'),
+(32, 15, DATE_SUB(CURDATE(), INTERVAL 121 DAY), '15:00:00', 'CONFIRMED'),
+(49, 15, DATE_SUB(CURDATE(), INTERVAL 121 DAY), '09:00:00', 'CONFIRMED'),
+(20, 12, DATE_SUB(CURDATE(), INTERVAL 119 DAY), '10:30:00', 'CONFIRMED'),
+(51, 4, DATE_SUB(CURDATE(), INTERVAL 117 DAY), '15:00:00', 'CONFIRMED'),
+(47, 1, DATE_SUB(CURDATE(), INTERVAL 114 DAY), '13:30:00', 'CONFIRMED'),
+(18, 1, DATE_SUB(CURDATE(), INTERVAL 113 DAY), '11:00:00', 'CONFIRMED'),
+(6, 1, DATE_SUB(CURDATE(), INTERVAL 113 DAY), '16:30:00', 'CONFIRMED'),
+(20, 5, DATE_SUB(CURDATE(), INTERVAL 113 DAY), '09:00:00', 'CONFIRMED'),
+(51, 7, DATE_SUB(CURDATE(), INTERVAL 113 DAY), '16:30:00', 'CONFIRMED'),
+(19, 14, DATE_SUB(CURDATE(), INTERVAL 113 DAY), '13:00:00', 'CONFIRMED'),
+(52, 14, DATE_SUB(CURDATE(), INTERVAL 113 DAY), '11:00:00', 'CONFIRMED'),
+(18, 3, DATE_SUB(CURDATE(), INTERVAL 112 DAY), '10:30:00', 'CONFIRMED'),
+(1, 8, DATE_SUB(CURDATE(), INTERVAL 112 DAY), '10:00:00', 'CONFIRMED'),
+(47, 9, DATE_SUB(CURDATE(), INTERVAL 110 DAY), '12:30:00', 'CONFIRMED'),
+(35, 15, DATE_SUB(CURDATE(), INTERVAL 109 DAY), '09:30:00', 'CANCELLED'),
+(49, 15, DATE_SUB(CURDATE(), INTERVAL 109 DAY), '12:00:00', 'CONFIRMED'),
+(3, 9, DATE_SUB(CURDATE(), INTERVAL 106 DAY), '16:00:00', 'CONFIRMED'),
+(60, 9, DATE_SUB(CURDATE(), INTERVAL 106 DAY), '12:30:00', 'CONFIRMED'),
+(12, 2, DATE_SUB(CURDATE(), INTERVAL 105 DAY), '16:30:00', 'CANCELLED'),
+(52, 10, DATE_SUB(CURDATE(), INTERVAL 105 DAY), '14:00:00', 'CONFIRMED'),
+(42, 13, DATE_SUB(CURDATE(), INTERVAL 105 DAY), '12:00:00', 'CONFIRMED'),
+(36, 3, DATE_SUB(CURDATE(), INTERVAL 103 DAY), '09:30:00', 'CONFIRMED'),
+(22, 5, DATE_SUB(CURDATE(), INTERVAL 103 DAY), '14:30:00', 'CONFIRMED'),
+(8, 6, DATE_SUB(CURDATE(), INTERVAL 103 DAY), '12:30:00', 'CONFIRMED'),
+(6, 9, DATE_SUB(CURDATE(), INTERVAL 103 DAY), '16:00:00', 'CONFIRMED'),
+(14, 9, DATE_SUB(CURDATE(), INTERVAL 103 DAY), '16:30:00', 'CONFIRMED'),
+(23, 11, DATE_SUB(CURDATE(), INTERVAL 102 DAY), '10:30:00', 'CONFIRMED'),
+(29, 12, DATE_SUB(CURDATE(), INTERVAL 100 DAY), '14:00:00', 'CONFIRMED'),
+(9, 16, DATE_SUB(CURDATE(), INTERVAL 100 DAY), '12:30:00', 'CONFIRMED'),
+(56, 16, DATE_SUB(CURDATE(), INTERVAL 100 DAY), '09:00:00', 'CONFIRMED'),
+(11, 2, DATE_SUB(CURDATE(), INTERVAL 98 DAY), '11:00:00', 'CANCELLED'),
+(21, 2, DATE_SUB(CURDATE(), INTERVAL 98 DAY), '12:30:00', 'CONFIRMED'),
+(26, 5, DATE_SUB(CURDATE(), INTERVAL 98 DAY), '09:00:00', 'CONFIRMED'),
+(60, 10, DATE_SUB(CURDATE(), INTERVAL 98 DAY), '15:00:00', 'CONFIRMED'),
+(27, 13, DATE_SUB(CURDATE(), INTERVAL 96 DAY), '09:00:00', 'CANCELLED'),
+(7, 13, DATE_SUB(CURDATE(), INTERVAL 95 DAY), '16:00:00', 'CONFIRMED'),
+(46, 10, DATE_SUB(CURDATE(), INTERVAL 94 DAY), '10:30:00', 'CONFIRMED'),
+(34, 4, DATE_SUB(CURDATE(), INTERVAL 91 DAY), '16:30:00', 'CONFIRMED'),
+(38, 7, DATE_SUB(CURDATE(), INTERVAL 91 DAY), '10:30:00', 'CANCELLED'),
+(49, 15, DATE_SUB(CURDATE(), INTERVAL 91 DAY), '16:30:00', 'CANCELLED'),
+(18, 1, DATE_SUB(CURDATE(), INTERVAL 89 DAY), '12:00:00', 'CONFIRMED'),
+(42, 12, DATE_SUB(CURDATE(), INTERVAL 89 DAY), '11:00:00', 'CONFIRMED'),
+(52, 8, DATE_SUB(CURDATE(), INTERVAL 85 DAY), '14:30:00', 'CONFIRMED'),
+(14, 8, DATE_SUB(CURDATE(), INTERVAL 84 DAY), '15:00:00', 'CONFIRMED'),
+(32, 5, DATE_SUB(CURDATE(), INTERVAL 82 DAY), '14:30:00', 'CONFIRMED'),
+(10, 5, DATE_SUB(CURDATE(), INTERVAL 82 DAY), '13:30:00', 'CONFIRMED'),
+(11, 5, DATE_SUB(CURDATE(), INTERVAL 80 DAY), '11:00:00', 'CONFIRMED'),
+(20, 3, DATE_SUB(CURDATE(), INTERVAL 78 DAY), '10:30:00', 'CONFIRMED'),
+(10, 3, DATE_SUB(CURDATE(), INTERVAL 78 DAY), '16:30:00', 'CONFIRMED'),
+(37, 4, DATE_SUB(CURDATE(), INTERVAL 78 DAY), '10:00:00', 'CANCELLED'),
+(58, 4, DATE_SUB(CURDATE(), INTERVAL 78 DAY), '16:30:00', 'CONFIRMED'),
+(6, 2, DATE_SUB(CURDATE(), INTERVAL 75 DAY), '14:00:00', 'CONFIRMED'),
+(23, 12, DATE_SUB(CURDATE(), INTERVAL 74 DAY), '14:00:00', 'CONFIRMED'),
+(5, 10, DATE_SUB(CURDATE(), INTERVAL 71 DAY), '09:30:00', 'CONFIRMED'),
+(60, 13, DATE_SUB(CURDATE(), INTERVAL 71 DAY), '16:30:00', 'CONFIRMED'),
+(16, 3, DATE_SUB(CURDATE(), INTERVAL 70 DAY), '11:00:00', 'CONFIRMED'),
+(8, 12, DATE_SUB(CURDATE(), INTERVAL 70 DAY), '14:30:00', 'CONFIRMED'),
+(11, 10, DATE_SUB(CURDATE(), INTERVAL 67 DAY), '15:00:00', 'CANCELLED'),
+(26, 10, DATE_SUB(CURDATE(), INTERVAL 67 DAY), '13:00:00', 'CANCELLED'),
+(32, 13, DATE_SUB(CURDATE(), INTERVAL 67 DAY), '15:30:00', 'CONFIRMED'),
+(11, 15, DATE_SUB(CURDATE(), INTERVAL 67 DAY), '11:30:00', 'CONFIRMED'),
+(17, 1, DATE_SUB(CURDATE(), INTERVAL 66 DAY), '14:30:00', 'CONFIRMED'),
+(37, 3, DATE_SUB(CURDATE(), INTERVAL 64 DAY), '15:00:00', 'CONFIRMED'),
+(4, 6, DATE_SUB(CURDATE(), INTERVAL 64 DAY), '16:30:00', 'CONFIRMED'),
+(40, 12, DATE_SUB(CURDATE(), INTERVAL 61 DAY), '14:00:00', 'CONFIRMED'),
+(26, 12, DATE_SUB(CURDATE(), INTERVAL 61 DAY), '12:30:00', 'CONFIRMED'),
+(19, 15, DATE_SUB(CURDATE(), INTERVAL 61 DAY), '11:30:00', 'CONFIRMED'),
+(20, 15, DATE_SUB(CURDATE(), INTERVAL 61 DAY), '09:30:00', 'CONFIRMED'),
+(32, 12, DATE_SUB(CURDATE(), INTERVAL 60 DAY), '16:30:00', 'CONFIRMED'),
+(15, 15, DATE_SUB(CURDATE(), INTERVAL 60 DAY), '16:30:00', 'CONFIRMED'),
+(60, 7, DATE_SUB(CURDATE(), INTERVAL 59 DAY), '10:30:00', 'CONFIRMED'),
+(38, 8, DATE_SUB(CURDATE(), INTERVAL 59 DAY), '13:30:00', 'CONFIRMED'),
+(34, 16, DATE_SUB(CURDATE(), INTERVAL 59 DAY), '09:30:00', 'CONFIRMED'),
+(13, 16, DATE_SUB(CURDATE(), INTERVAL 59 DAY), '12:30:00', 'CONFIRMED'),
+(4, 10, DATE_SUB(CURDATE(), INTERVAL 57 DAY), '12:00:00', 'CONFIRMED'),
+(7, 3, DATE_SUB(CURDATE(), INTERVAL 56 DAY), '16:00:00', 'CANCELLED'),
+(28, 9, DATE_SUB(CURDATE(), INTERVAL 56 DAY), '16:00:00', 'CONFIRMED'),
+(57, 2, DATE_SUB(CURDATE(), INTERVAL 53 DAY), '15:30:00', 'CONFIRMED'),
+(3, 2, DATE_SUB(CURDATE(), INTERVAL 53 DAY), '14:30:00', 'CONFIRMED'),
+(17, 6, DATE_SUB(CURDATE(), INTERVAL 51 DAY), '14:30:00', 'CONFIRMED'),
+(46, 15, DATE_SUB(CURDATE(), INTERVAL 51 DAY), '15:00:00', 'CANCELLED'),
+(2, 8, DATE_SUB(CURDATE(), INTERVAL 50 DAY), '14:00:00', 'CONFIRMED'),
+(37, 8, DATE_SUB(CURDATE(), INTERVAL 50 DAY), '15:00:00', 'CONFIRMED'),
+(19, 4, DATE_SUB(CURDATE(), INTERVAL 49 DAY), '16:00:00', 'CONFIRMED'),
+(10, 16, DATE_SUB(CURDATE(), INTERVAL 49 DAY), '15:00:00', 'CONFIRMED'),
+(17, 6, DATE_SUB(CURDATE(), INTERVAL 47 DAY), '09:00:00', 'CONFIRMED'),
+(19, 7, DATE_SUB(CURDATE(), INTERVAL 47 DAY), '09:00:00', 'CONFIRMED'),
+(35, 11, DATE_SUB(CURDATE(), INTERVAL 45 DAY), '10:00:00', 'CONFIRMED'),
+(2, 11, DATE_SUB(CURDATE(), INTERVAL 45 DAY), '15:00:00', 'CONFIRMED'),
+(56, 13, DATE_SUB(CURDATE(), INTERVAL 45 DAY), '16:30:00', 'CONFIRMED'),
+(50, 4, DATE_SUB(CURDATE(), INTERVAL 44 DAY), '14:00:00', 'CANCELLED'),
+(18, 12, DATE_SUB(CURDATE(), INTERVAL 44 DAY), '15:30:00', 'CONFIRMED'),
+(24, 5, DATE_SUB(CURDATE(), INTERVAL 42 DAY), '13:30:00', 'CONFIRMED'),
+(33, 2, DATE_SUB(CURDATE(), INTERVAL 40 DAY), '14:00:00', 'CONFIRMED'),
+(5, 4, DATE_SUB(CURDATE(), INTERVAL 40 DAY), '14:30:00', 'CONFIRMED'),
+(58, 16, DATE_SUB(CURDATE(), INTERVAL 40 DAY), '11:30:00', 'CONFIRMED'),
+(32, 16, DATE_SUB(CURDATE(), INTERVAL 40 DAY), '09:30:00', 'CONFIRMED'),
+(16, 7, DATE_SUB(CURDATE(), INTERVAL 39 DAY), '12:00:00', 'CONFIRMED'),
+(41, 2, DATE_SUB(CURDATE(), INTERVAL 38 DAY), '11:00:00', 'CONFIRMED'),
+(21, 3, DATE_SUB(CURDATE(), INTERVAL 38 DAY), '16:30:00', 'CONFIRMED'),
+(25, 9, DATE_SUB(CURDATE(), INTERVAL 38 DAY), '09:30:00', 'CONFIRMED'),
+(43, 9, DATE_SUB(CURDATE(), INTERVAL 38 DAY), '15:30:00', 'CONFIRMED'),
+(60, 3, DATE_SUB(CURDATE(), INTERVAL 37 DAY), '12:30:00', 'CONFIRMED'),
+(17, 12, DATE_SUB(CURDATE(), INTERVAL 37 DAY), '15:00:00', 'CONFIRMED'),
+(24, 13, DATE_SUB(CURDATE(), INTERVAL 37 DAY), '14:30:00', 'CONFIRMED'),
+(47, 4, DATE_SUB(CURDATE(), INTERVAL 36 DAY), '12:30:00', 'CONFIRMED'),
+(35, 4, DATE_SUB(CURDATE(), INTERVAL 36 DAY), '16:30:00', 'CANCELLED'),
+(55, 6, DATE_SUB(CURDATE(), INTERVAL 36 DAY), '15:00:00', 'CONFIRMED'),
+(58, 13, DATE_SUB(CURDATE(), INTERVAL 36 DAY), '11:30:00', 'CONFIRMED'),
+(3, 14, DATE_SUB(CURDATE(), INTERVAL 36 DAY), '15:00:00', 'CANCELLED'),
+(22, 14, DATE_SUB(CURDATE(), INTERVAL 36 DAY), '10:00:00', 'CONFIRMED'),
+(13, 1, DATE_SUB(CURDATE(), INTERVAL 35 DAY), '12:30:00', 'CONFIRMED'),
+(35, 4, DATE_SUB(CURDATE(), INTERVAL 35 DAY), '11:30:00', 'CONFIRMED'),
+(27, 4, DATE_SUB(CURDATE(), INTERVAL 35 DAY), '09:30:00', 'CONFIRMED'),
+(60, 10, DATE_SUB(CURDATE(), INTERVAL 35 DAY), '09:00:00', 'CONFIRMED'),
+(57, 10, DATE_SUB(CURDATE(), INTERVAL 35 DAY), '10:30:00', 'CANCELLED'),
+(39, 12, DATE_SUB(CURDATE(), INTERVAL 31 DAY), '14:30:00', 'CONFIRMED'),
+(42, 2, DATE_SUB(CURDATE(), INTERVAL 30 DAY), '09:00:00', 'CONFIRMED'),
+(47, 6, DATE_SUB(CURDATE(), INTERVAL 30 DAY), '12:30:00', 'CONFIRMED'),
+(31, 6, DATE_SUB(CURDATE(), INTERVAL 30 DAY), '15:00:00', 'CONFIRMED'),
+(13, 5, DATE_SUB(CURDATE(), INTERVAL 29 DAY), '11:30:00', 'CONFIRMED'),
+(44, 9, DATE_SUB(CURDATE(), INTERVAL 29 DAY), '09:30:00', 'CONFIRMED'),
+(11, 1, DATE_SUB(CURDATE(), INTERVAL 28 DAY), '10:30:00', 'CANCELLED'),
+(19, 15, DATE_SUB(CURDATE(), INTERVAL 28 DAY), '14:00:00', 'CONFIRMED'),
+(30, 15, DATE_SUB(CURDATE(), INTERVAL 28 DAY), '11:00:00', 'CONFIRMED'),
+(59, 13, DATE_SUB(CURDATE(), INTERVAL 26 DAY), '15:30:00', 'CONFIRMED'),
+(60, 13, DATE_SUB(CURDATE(), INTERVAL 26 DAY), '15:00:00', 'CONFIRMED'),
+(10, 2, DATE_SUB(CURDATE(), INTERVAL 25 DAY), '10:00:00', 'CONFIRMED'),
+(11, 13, DATE_SUB(CURDATE(), INTERVAL 25 DAY), '16:30:00', 'CONFIRMED'),
+(12, 1, DATE_SUB(CURDATE(), INTERVAL 24 DAY), '11:00:00', 'CONFIRMED'),
+(4, 1, DATE_SUB(CURDATE(), INTERVAL 24 DAY), '10:30:00', 'CONFIRMED'),
+(7, 3, DATE_SUB(CURDATE(), INTERVAL 24 DAY), '11:00:00', 'CONFIRMED'),
+(42, 3, DATE_SUB(CURDATE(), INTERVAL 24 DAY), '12:00:00', 'CONFIRMED'),
+(16, 4, DATE_SUB(CURDATE(), INTERVAL 23 DAY), '09:30:00', 'CONFIRMED'),
+(8, 12, DATE_SUB(CURDATE(), INTERVAL 18 DAY), '14:00:00', 'CONFIRMED'),
+(6, 12, DATE_SUB(CURDATE(), INTERVAL 18 DAY), '12:30:00', 'CONFIRMED'),
+(21, 15, DATE_SUB(CURDATE(), INTERVAL 18 DAY), '16:00:00', 'CONFIRMED'),
+(11, 6, DATE_SUB(CURDATE(), INTERVAL 16 DAY), '14:00:00', 'CONFIRMED'),
+(9, 10, DATE_SUB(CURDATE(), INTERVAL 14 DAY), '16:00:00', 'CANCELLED'),
+(19, 15, DATE_SUB(CURDATE(), INTERVAL 12 DAY), '14:30:00', 'CANCELLED'),
+(36, 13, DATE_SUB(CURDATE(), INTERVAL 11 DAY), '14:30:00', 'CONFIRMED'),
+(20, 2, DATE_SUB(CURDATE(), INTERVAL 10 DAY), '12:30:00', 'CONFIRMED'),
+(7, 4, DATE_SUB(CURDATE(), INTERVAL 10 DAY), '15:00:00', 'CONFIRMED'),
+(29, 4, DATE_SUB(CURDATE(), INTERVAL 10 DAY), '11:30:00', 'CONFIRMED'),
+(26, 6, DATE_SUB(CURDATE(), INTERVAL 8 DAY), '13:30:00', 'CONFIRMED'),
+(22, 10, DATE_SUB(CURDATE(), INTERVAL 8 DAY), '15:00:00', 'CONFIRMED'),
+(18, 5, DATE_SUB(CURDATE(), INTERVAL 7 DAY), '16:30:00', 'CONFIRMED'),
+(1, 5, DATE_SUB(CURDATE(), INTERVAL 7 DAY), '15:00:00', 'CONFIRMED'),
+(2, 9, DATE_SUB(CURDATE(), INTERVAL 7 DAY), '09:00:00', 'CONFIRMED'),
+(36, 13, DATE_SUB(CURDATE(), INTERVAL 7 DAY), '15:00:00', 'CONFIRMED'),
+(10, 5, DATE_SUB(CURDATE(), INTERVAL 4 DAY), '11:30:00', 'CONFIRMED'),
+(49, 5, DATE_SUB(CURDATE(), INTERVAL 4 DAY), '16:00:00', 'CONFIRMED'),
+(50, 10, DATE_SUB(CURDATE(), INTERVAL 4 DAY), '15:00:00', 'CONFIRMED'),
+(30, 3, DATE_SUB(CURDATE(), INTERVAL 2 DAY), '12:30:00', 'CONFIRMED'),
+(31, 3, DATE_SUB(CURDATE(), INTERVAL 2 DAY), '14:30:00', 'CONFIRMED'),
+(54, 8, DATE_SUB(CURDATE(), INTERVAL 2 DAY), '12:00:00', 'CONFIRMED');
+
+-- bills for every confirmed old appointment (doctor's fee, billed on the visit day)
+INSERT INTO bills (appt_id, amount, billed_on)
+SELECT a.appt_id, d.fee, TIMESTAMP(a.appt_date, a.slot)
+FROM appointments a
+JOIN doctors d ON d.doctor_id = a.doctor_id
+WHERE a.status = 'CONFIRMED';
+
+-- ---------- trigger: no two bookings for same doctor and slot ----------
+
+DELIMITER $$
+
+CREATE TRIGGER trg_block_double_slot
+BEFORE INSERT ON appointments
+FOR EACH ROW
+BEGIN
+    DECLARE v_clash INT;
+
+    SELECT COUNT(*) INTO v_clash
+    FROM appointments
+    WHERE doctor_id = NEW.doctor_id
+      AND appt_date = NEW.appt_date
+      AND slot      = NEW.slot
+      AND status   <> 'CANCELLED';
+
+    IF v_clash > 0 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Doctor already has an appointment in this slot';
+    END IF;
+END$$
+
+-- ---------- transaction: confirm appointment + create bill ----------
+-- if anything fails (wrong status, no such appointment) nothing is saved
+
+CREATE PROCEDURE confirm_appointment(IN p_appt INT)
+BEGIN
+    DECLARE v_status VARCHAR(10);
+    DECLARE v_fee    DECIMAL(8,2);
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    START TRANSACTION;
+
+    SELECT a.status, d.fee INTO v_status, v_fee
+    FROM appointments a
+    JOIN doctors d ON d.doctor_id = a.doctor_id
+    WHERE a.appt_id = p_appt
+    FOR UPDATE;
+
+    IF v_status IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Appointment not found';
+    END IF;
+
+    IF v_status <> 'PENDING' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Only a pending appointment can be confirmed';
+    END IF;
+
+    UPDATE appointments SET status = 'CONFIRMED' WHERE appt_id = p_appt;
+
+    INSERT INTO bills (appt_id, amount) VALUES (p_appt, v_fee);
+
+    COMMIT;
+END$$
+
+DELIMITER ;
+
+-- today's appointments (all pending to start with)
+INSERT INTO appointments (patient_id, doctor_id, appt_date, slot) VALUES
+(60, 1, CURDATE(), '09:30:00'),
+(44, 2, CURDATE(), '14:00:00'),
+(5, 2, CURDATE(), '13:30:00'),
+(26, 3, CURDATE(), '09:30:00'),
+(4, 4, CURDATE(), '16:30:00'),
+(21, 5, CURDATE(), '12:00:00'),
+(45, 5, CURDATE(), '14:00:00'),
+(41, 6, CURDATE(), '14:30:00'),
+(5, 6, CURDATE(), '09:00:00'),
+(14, 7, CURDATE(), '15:00:00'),
+(10, 7, CURDATE(), '12:30:00'),
+(53, 8, CURDATE(), '16:00:00'),
+(36, 8, CURDATE(), '14:00:00'),
+(1, 9, CURDATE(), '11:30:00'),
+(15, 10, CURDATE(), '12:30:00'),
+(9, 10, CURDATE(), '15:30:00'),
+(53, 11, CURDATE(), '15:30:00'),
+(43, 12, CURDATE(), '09:00:00'),
+(40, 13, CURDATE(), '13:30:00'),
+(6, 14, CURDATE(), '14:30:00'),
+(43, 15, CURDATE(), '10:00:00'),
+(4, 15, CURDATE(), '11:30:00'),
+(39, 16, CURDATE(), '16:00:00');
+
+-- ---------- view: today's appointments per doctor ----------
+
+CREATE VIEW todays_appointments AS
+SELECT d.doctor_id,
+       d.name  AS doctor,
+       dp.name AS department,
+       COUNT(a.appt_id) AS appointments_today
+FROM doctors d
+JOIN departments dp ON dp.dept_id = d.dept_id
+LEFT JOIN appointments a
+       ON a.doctor_id = d.doctor_id
+      AND a.appt_date = CURDATE()
+      AND a.status   <> 'CANCELLED'
+GROUP BY d.doctor_id, d.name, dp.name;
+
+-- ---------- try it out ----------
+-- confirm the first few pending appointments of today (confirm + bill together)
+
+SELECT MIN(appt_id) INTO @first_today FROM appointments WHERE appt_date = CURDATE();
+
+CALL confirm_appointment(@first_today);
+CALL confirm_appointment(@first_today + 1);
+CALL confirm_appointment(@first_today + 2);
+
+SELECT * FROM todays_appointments ORDER BY appointments_today DESC;
+SELECT COUNT(*) AS total_appointments FROM appointments;
+SELECT COUNT(*) AS total_bills FROM bills;
+
+-- ---------- report queries ----------
+
+-- patients per department
+SELECT dp.name AS department,
+       COUNT(DISTINCT a.patient_id) AS patients
+FROM departments dp
+LEFT JOIN doctors d      ON d.dept_id = dp.dept_id
+LEFT JOIN appointments a ON a.doctor_id = d.doctor_id AND a.status <> 'CANCELLED'
+GROUP BY dp.dept_id, dp.name
+ORDER BY patients DESC;
+
+-- doctor workload
+SELECT d.name AS doctor,
+       COUNT(a.appt_id) AS appointments
+FROM doctors d
+LEFT JOIN appointments a ON a.doctor_id = d.doctor_id AND a.status <> 'CANCELLED'
+GROUP BY d.doctor_id, d.name
+ORDER BY appointments DESC;
+
+-- revenue per month
+SELECT DATE_FORMAT(billed_on, '%Y-%m') AS month,
+       COUNT(*)    AS bills,
+       SUM(amount) AS revenue
+FROM bills
+GROUP BY DATE_FORMAT(billed_on, '%Y-%m')
+ORDER BY month;
+
+-- ---------- import / export ----------
+-- import needs:  SET GLOBAL local_infile = 1;
+-- and client:    mysql --local-infile=1 -u root -p
+-- (or use the Table Data Import Wizard in Workbench on the doctors table)
+
+-- import doctors from csv (doctors.csv has a header row)
+LOAD DATA LOCAL INFILE 'doctors.csv'
+INTO TABLE doctors
+FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 LINES
+(name, dept_id, fee);
+
+-- export bills
+-- the server only writes inside the folder shown by:
+--   SHOW VARIABLES LIKE 'secure_file_priv';
+-- change the path to that folder. In Workbench you can instead run the
+-- SELECT part alone and use the Export button above the result grid.
+SELECT 'bill_id', 'patient', 'doctor', 'appt_date', 'amount', 'billed_on'
+UNION ALL
+SELECT b.bill_id, p.name, d.name, a.appt_date, b.amount, b.billed_on
+FROM bills b
+JOIN appointments a ON a.appt_id = b.appt_id
+JOIN patients p     ON p.patient_id = a.patient_id
+JOIN doctors d      ON d.doctor_id = a.doctor_id
+INTO OUTFILE '/var/lib/mysql-files/bills.csv'
+FIELDS TERMINATED BY ',' ENCLOSED BY '"'
+LINES TERMINATED BY '\n';
+
+-- ---------- tests that give an error (run one at a time) ----------
+-- book a doctor in a slot that is already taken today -> trigger blocks it
+-- (change doctor_id and slot to match a row from: SELECT * FROM appointments WHERE appt_date = CURDATE();)
+-- INSERT INTO appointments (patient_id, doctor_id, appt_date, slot)
+-- VALUES (1, <doctor_id>, CURDATE(), '<same slot>');
+
+-- confirming an already confirmed appointment -> error, no second bill
+-- CALL confirm_appointment(1);
