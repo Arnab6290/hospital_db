@@ -524,9 +524,6 @@ GROUP BY DATE_FORMAT(billed_on, '%Y-%m')
 ORDER BY month;
 
 -- ---------- import / export ----------
--- import needs:  SET GLOBAL local_infile = 1;
--- and client:    mysql --local-infile=1 -u root -p
--- (or use the Table Data Import Wizard in Workbench on the doctors table)
 
 -- import doctors from csv (doctors.csv has a header row)
 LOAD DATA LOCAL INFILE 'doctors.csv'
@@ -537,10 +534,7 @@ IGNORE 1 LINES
 (name, dept_id, fee);
 
 -- export bills
--- the server only writes inside the folder shown by:
---   SHOW VARIABLES LIKE 'secure_file_priv';
--- change the path to that folder. In Workbench you can instead run the
--- SELECT part alone and use the Export button above the result grid.
+
 SELECT 'bill_id', 'patient', 'doctor', 'appt_date', 'amount', 'billed_on'
 UNION ALL
 SELECT b.bill_id, p.name, d.name, a.appt_date, b.amount, b.billed_on
@@ -552,11 +546,4 @@ INTO OUTFILE '/var/lib/mysql-files/bills.csv'
 FIELDS TERMINATED BY ',' ENCLOSED BY '"'
 LINES TERMINATED BY '\n';
 
--- ---------- tests that give an error (run one at a time) ----------
--- book a doctor in a slot that is already taken today -> trigger blocks it
--- (change doctor_id and slot to match a row from: SELECT * FROM appointments WHERE appt_date = CURDATE();)
--- INSERT INTO appointments (patient_id, doctor_id, appt_date, slot)
--- VALUES (1, <doctor_id>, CURDATE(), '<same slot>');
 
--- confirming an already confirmed appointment -> error, no second bill
--- CALL confirm_appointment(1);
